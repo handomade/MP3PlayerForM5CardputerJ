@@ -38,6 +38,22 @@
 #define BOTTOM_BAR_HEIGHT 18
 #define MAX_VISIBLE_ROWS 6  
 
+// --- UTF-8 / JP DISPLAY HELPERS ---
+// lgfxJapanGothic_12 の文字幅（ASCII=6px, CJK=12px）でピクセル幅に収まるよう切り詰め。
+// 収まらない場合は末尾に '~' を付加する。
+String fitJPString(const String& s, int maxPx) {
+    String r; int used = 0; const char* p = s.c_str();
+    while (*p) {
+        unsigned char c = (unsigned char)*p;
+        int step = ((c & 0x80) == 0) ? 1 : ((c & 0xE0) == 0xC0) ? 2 : ((c & 0xF0) == 0xE0) ? 3 : 4;
+        int w = (step == 1) ? 6 : 12;
+        if (used + w > maxPx) { r += '~'; break; }
+        for (int i = 0; i < step; i++) r += (char)*(p + i);
+        p += step; used += w;
+    }
+    return r;
+}
+
 // --- DYNAMIC COLORS & THEMES ---
 uint16_t C_BG_DARK, C_BG_LIGHT, C_HEADER, C_ACCENT, C_PLAYING, C_HIGHLIGHT, C_TEXT_MAIN, C_TEXT_DIM;
 
@@ -621,6 +637,7 @@ public:
             M5Cardputer.Display.setCursor(6, yPos);
             M5Cardputer.Display.print("No results.");
         } else {
+            M5Cardputer.Display.setFont(&fonts::lgfxJapanGothic_12);
             for (int i = 0; i < MAX_VISIBLE_ROWS; i++) {
                 int ri = g_searchScrollOffset + i;
                 if (ri >= totalResults) break;
@@ -641,11 +658,11 @@ public:
                 String songPath = audioApp.getSongPath(songIdx);
                 int slash = songPath.lastIndexOf('/');
                 String fname = (slash >= 0) ? songPath.substring(slash + 1) : songPath;
-                if (fname.length() > 28) fname = fname.substring(0, 27) + "~";
+                int dotSrc = fname.lastIndexOf('.'); if (dotSrc > 0) fname = fname.substring(0, dotSrc);
 
                 M5Cardputer.Display.setCursor(6, yPos + 2);
                 if (isPlaying && !isSelected) M5Cardputer.Display.print("> ");
-                M5Cardputer.Display.print(fname);
+                M5Cardputer.Display.print(fitJPString(fname, (isPlaying && !isSelected) ? 210 : 222));
                 yPos += ROW_HEIGHT;
             }
 
@@ -747,7 +764,7 @@ public:
     }
 
     static void drawPlaylist() {
-        M5Cardputer.Display.setFont(&fonts::Font0);
+        M5Cardputer.Display.setFont(&fonts::lgfxJapanGothic_12);
         int totalSongs = audioApp.songOffsets.size();
         int startIdx = max(0, min(audioApp.browserIndex - (MAX_VISIBLE_ROWS / 2), totalSongs - MAX_VISIBLE_ROWS));
         int yPos = HEADER_HEIGHT + 2, xPos = 0;
@@ -765,10 +782,11 @@ public:
 
             String dispName = f ? f.readStringUntil('\n') : ""; dispName.trim();
             int slashIdx = dispName.lastIndexOf('/'); if(slashIdx >= 0) dispName = dispName.substring(slashIdx+1);
+            int dotIdx = dispName.lastIndexOf('.'); if(dotIdx > 0) dispName = dispName.substring(0, dotIdx);
 
             M5Cardputer.Display.setCursor(xPos + 5, yPos + 3);
             if (actualIdx == audioApp.currentIndex) M5Cardputer.Display.print("> ");
-            M5Cardputer.Display.print(dispName.substring(0, 16)); yPos += ROW_HEIGHT;
+            M5Cardputer.Display.print(fitJPString(dispName, actualIdx == audioApp.currentIndex ? 100 : 112)); yPos += ROW_HEIGHT;
         }
         if (f) f.close();
     }
@@ -790,7 +808,16 @@ public:
         }
 
         M5Cardputer.Display.setTextColor(C_TEXT_MAIN); M5Cardputer.Display.setCursor(xStart + 5, yStart + 16);
-        if (audioApp.currentTitle.length() > 0) M5Cardputer.Display.print(audioApp.currentTitle.substring(0, 15));
+        {
+            String dispTitle = audioApp.currentTitle;
+            if (dispTitle.length() == 0 && !audioApp.songOffsets.empty()) {
+                // ID3タグが空（UTF-16エンコードなど）のときはファイル名をフォールバック表示
+                String path = audioApp.getSongPath(audioApp.currentIndex);
+                int sl = path.lastIndexOf('/'); dispTitle = (sl >= 0) ? path.substring(sl + 1) : path;
+                int dot = dispTitle.lastIndexOf('.'); if (dot > 0) dispTitle = dispTitle.substring(0, dot);
+            }
+            if (dispTitle.length() > 0) M5Cardputer.Display.print(fitJPString(dispTitle, 105));
+        }
         
         if (audioApp.id3 && audioApp.file) {
             int maxW = M5Cardputer.Display.width() - xStart - 10;
@@ -857,9 +884,9 @@ public:
                 }
                 String artist = audioApp.currentArtist.length() > 0 ? audioApp.currentArtist : "Unknown Artist";
                 String album = audioApp.currentAlbum.length() > 0 ? audioApp.currentAlbum : "Unknown Album";
-                visSprite.setFont(&fonts::Font0);
-                visSprite.setTextColor(C_TEXT_MAIN); visSprite.setCursor(45, 4); visSprite.print(artist.substring(0, 12));
-                visSprite.setTextColor(C_TEXT_DIM); visSprite.setCursor(45, 16); visSprite.print(album.substring(0, 12));
+                visSprite.setFont(&fonts::lgfxJapanGothic_12);
+                visSprite.setTextColor(C_TEXT_MAIN); visSprite.setCursor(45, 4); visSprite.print(fitJPString(artist, 70));
+                visSprite.setTextColor(C_TEXT_DIM); visSprite.setCursor(45, 16); visSprite.print(fitJPString(album, 70));
                 int elapsedSec = 0, totalSec = 0;
                 if (audioApp.id3 && audioApp.id3->getSize() > 0) {
                     elapsedSec = audioApp.id3->getPos() / 16000;
