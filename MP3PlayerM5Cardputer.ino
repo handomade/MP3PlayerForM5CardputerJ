@@ -868,24 +868,22 @@ public:
                 if (titleFits) {
                     titleToShow = dispTitle;
                 } else {
-                    // スクロール位置を350msごとに1文字進める
+                    // 無限マーキースクロール: title + 空白4文字 でループ
+                    String padded = dispTitle + "    ";
+                    int paddedLen = (int)padded.length();
                     unsigned long now = millis();
                     if (now - g_lastScrollStep > 350) {
                         g_lastScrollStep = now;
-                        const char* p = dispTitle.c_str() + g_titleScrollOffset;
-                        if (*p) {
-                            unsigned char uc = (unsigned char)*p;
+                        if (g_titleScrollOffset < paddedLen) {
+                            unsigned char uc = (unsigned char)padded[g_titleScrollOffset];
                             int step = (uc < 0x80) ? 1 : (uc < 0xE0) ? 2 : (uc < 0xF0) ? 3 : 4;
                             g_titleScrollOffset += step;
-                            // 残りが表示領域に収まる位置まで来たらリセット
-                            if (fitJPString(dispTitle.substring(g_titleScrollOffset), 105) == dispTitle.substring(g_titleScrollOffset))
-                                g_titleScrollOffset = 0;
-                        } else {
-                            g_titleScrollOffset = 0;
                         }
+                        if (g_titleScrollOffset >= paddedLen) g_titleScrollOffset = 0;
                     }
-                    String fromOffset = dispTitle.substring(g_titleScrollOffset);
-                    titleToShow = fitJPString(fromOffset, 105);
+                    // offset位置以降＋先頭から繋げて表示幅分を切り出す
+                    String displaySrc = padded.substring(g_titleScrollOffset) + dispTitle;
+                    titleToShow = fitJPString(displaySrc, 105);
                     if (titleToShow.endsWith("~")) titleToShow.remove(titleToShow.length() - 1);
                 }
                 if (g_jpFontLoaded) {
