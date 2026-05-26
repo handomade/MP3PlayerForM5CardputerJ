@@ -1,145 +1,180 @@
-# M5Cardputer MP3 Player 🎵
+# M5Cardputer MP3 プレイヤー 🎵
 
-A fully featured, standalone MP3 player designed specifically for the **M5Stack Cardputer**. This application turns your Cardputer into a pocket-sized music station with a graphical interface, audio visualizer, playlist management, and keyboard controls.
+**M5Stack Cardputer** 専用の、フル機能を備えたスタンドアロン MP3 プレイヤーです。グラフィカルな UI・オーディオビジュアライザー・プレイリスト管理・キーボード操作で、Cardputer をポケットサイズの音楽プレイヤーに変えます。
 
 
-## ✨ Features
+## ✨ 機能一覧
 
-* **🖥️ Graphical User Interface:**
-    * **Split-Screen Layout:** Scrollable playlist on the left, "Now Playing" details on the right.
-    * **Album Art / Metadata:** Displays Song Title and Artist from ID3 tags.
-    * **Progress Bar:** Real-time seeking bar showing track progress.
-    * **Audio Visualizer:** FFT-based frequency bars that dance to the music (can be toggled to save battery).
+* **🖥️ グラフィカル UI:**
+    * **分割画面レイアウト:** 左側にスクロール可能なプレイリスト、右側に「再生中」の詳細を表示。
+    * **アルバムアート / メタデータ:** ID3 タグから曲名・アーティスト名を表示。
+    * **プログレスバー:** 再生位置をリアルタイムに表示するシークバー。
+    * **オーディオビジュアライザー:** 音楽に合わせて動く FFT ベースの周波数バー（バッテリー節約のためトグル可能）。
 
-* **🎧 Advanced Playback Controls:**
-    * **Play/Pause/Stop:** Standard media controls.
-    * **Next/Previous:** Skip tracks easily.
-    * **Fast Forward / Rewind:** Jump +/- 5 seconds using `/` and `,`.
-    * **Shuffle Mode:** Randomize your playlist.
-    * **Loop Modes:** Toggle between `1X` (No Loop), `ALL` (Loop All), and `ONE` (Loop Song).
+* **🀄 日本語 TTF フォント対応（新機能）:**
+    * SD カードの `/fonts/` フォルダに `.ttf` ファイルを置くだけで自動読み込み。
+    * **OpenFontRender** ライブラリによる FreeType レンダリングで、日本語ファイル名や ID3 タグを正しく表示。
+    * TTF ファイルが見つからない場合は内蔵ビットマップフォント（`lgfxJapanGothic_12`）にフォールバック。
+    * 対象画面: プレイリスト・曲名表示・検索画面。
 
-* **💾 Smart Library Management:**
-    * **Fast Startup:** Scans the SD card once and caches the playlist to a file (`playlist.txt`). Subsequent boots are instant.
-    * **Recursive Scanning:** Finds MP3s in root and subfolders.
-    * **Rescan Option:** Built-in menu to manually refresh the library if you add new songs.
+* **🎧 高度な再生コントロール:**
+    * **再生 / 一時停止 / 停止:** 標準メディアコントロール。
+    * **次の曲 / 前の曲:** トラックをかんたんにスキップ。
+    * **早送り / 巻き戻し:** `/` と `,` キーで ±5 秒スキップ。
+    * **シャッフルモード:** プレイリストをランダム再生。
+    * **ループモード:** `1X`（ループなし）→ `ALL`（全曲ループ）→ `ONE`（1 曲ループ）を切り替え。
 
-* **ℹ️ On-Device Help:**
-    * Press `I` to open a scrollable Help popup listing all keyboard shortcuts.
- 
-* **Memory-Optimized Playback:** Scans and indexes SD card directories using byte offsets, allowing for massive playlists without running out of RAM.
-  
-* **Web Streamer (NAS Mode):** Connect to an existing Wi-Fi network or spin up a standalone Access Point (Host Mode). Access a clean Web UI from your phone or PC to stream or download MP3s directly from the Cardputer.
+* **💾 スマートライブラリ管理:**
+    * **高速起動:** 初回のみ SD カードをスキャンしてプレイリストをキャッシュ（`playlist.txt`）。次回以降の起動は即座。
+    * **再帰スキャン:** ルートおよびサブフォルダ内の MP3 を自動検出。
+    * **再スキャン機能:** 楽曲を追加した際にメニューから手動でライブラリを更新可能。
 
-* **Smart Power Management:** * **Power Saver Modes:** Dynamically underclocks the CPU when Wi-Fi is off. Choose between Basic (160MHz) or Ultra (80MHz) to massively extend battery life.
+* **ℹ️ オンデバイスヘルプ:**
+    * `I` キーで全キーボードショートカットを一覧できるヘルプポップアップを表示。
 
-* **Display Sleep:** Automatically powers down the LCD controller chip during screen timeouts.
+* **メモリ最適化再生:** バイトオフセットでディレクトリをインデックス化し、大規模プレイリストでも RAM を使い切らない設計。
 
-* **Pocket Mode:** Control playback without looking at the screen using the Cardputer's Button A (G0) click combinations.
-## 🛠️ Hardware Requirements
+* **Web ストリーマー（NAS モード）:** 既存の Wi-Fi ネットワークへ接続するか、スタンドアロンアクセスポイント（ホストモード）を立ち上げ、スマートフォンや PC のブラウザから MP3 をストリーミング・ダウンロード。
 
-* **M5Stack Cardputer** (ESP32-S3 based)
-* **MicroSD Card** (Formatted to FAT32)
-* MP3 Files
+* **スマート電源管理:**
+    * **省電力モード:** Wi-Fi オフ時に CPU を動的にアンダークロック。`BASIC (160MHz)` または `ULTRA (80MHz)` を選んでバッテリー寿命を大幅に延長。
+    * **ディスプレイスリープ:** 画面タイムアウト中は LCD コントローラーチップを自動シャットダウン。
 
-## 📦 Software & Libraries
+* **ポケットモード:** Cardputer の Button A (G0) クリック組み合わせで画面を見ずに再生操作。
 
-This project is built using the **Arduino IDE**. You need to install the following libraries via the Arduino Library Manager:
 
-1.  **M5Cardputer** (by M5Stack)
-2.  **M5Unified** (by M5Stack)
-3.  **ESP8266Audio** (by Earle F. Philhower, III) - *Required for MP3 decoding.*
+## 🛠️ 必要なハードウェア
 
-> **Note:** No external JSON library is required. The caching system uses standard file I/O to keep dependencies light.
+* **M5Stack Cardputer**（ESP32-S3 搭載）
+* **MicroSD カード**（FAT32 フォーマット済み）
+* MP3 ファイル
 
-## 🚀 Installation
 
-1.  **Prepare the SD Card:**
-    * Format your MicroSD card to **FAT32**.
-    * Copy your `.mp3` files onto the card. You can place them in the root directory or organize them into folders.
-    * Insert the SD card into the Cardputer.
+## 📦 ソフトウェア・ライブラリ
 
-2.  **Setup Arduino IDE:**
-    * Open Arduino IDE.
-    * Go to **Tools > Board** and select **M5Stack Cardputer** (or `M5Stack-STAMPS3` if Cardputer isn't listed, but ensure pin definitions match).
-    * Install the required libraries listed above.
+**Arduino IDE** を使用してビルドします。以下のライブラリを Arduino Library Manager からインストールしてください。
 
-3.  **Flash the Code:**
-    * Copy the source code into a new sketch.
-    * Connect your Cardputer via USB-C.
-    * Click **Upload**.
+1.  **M5Cardputer**（by M5Stack）
+2.  **M5Unified**（by M5Stack）
+3.  **ESP8266Audio**（by Earle F. Philhower, III）— *MP3 デコードに必須*
+4.  **OpenFontRender**（by takkaO）— *TTF フォントレンダリングに必須* → [GitHub](https://github.com/takkaO/OpenFontRender)
 
-## 🎮 Controls
+> **注意:** 外部の JSON ライブラリは不要です。キャッシュシステムは標準ファイル I/O のみを使用しています。
 
-| Key | Function | Description |
+
+## 🚀 インストール手順
+
+1.  **SD カードの準備:**
+    * MicroSD カードを **FAT32** でフォーマットする。
+    * `.mp3` ファイルをカードにコピーする（ルートディレクトリでもサブフォルダでも可）。
+    * **日本語フォントを使う場合:** SD カードのルートに `/fonts/` フォルダを作成し、任意の `.ttf` ファイルを 1 つ以上置く（例: `NotoSansJP.ttf`）。起動時に最初に見つかった TTF が自動的に読み込まれます。
+    * SD カードを Cardputer に挿入する。
+
+2.  **Arduino IDE のセットアップ:**
+    * Arduino IDE を開く。
+    * **ツール > ボード** で **M5Stack Cardputer** を選択する。
+    * 上記のライブラリをすべてインストールする。
+    * **ツール > パーティションスキーム** で **`Huge APP (3MB No OTA/1MB SPIFFS)`** を選択する（TTF レンダリングライブラリ分のフラッシュ領域が必要）。
+
+3.  **書き込み:**
+    * ソースコードをスケッチにコピーする。
+    * USB-C で Cardputer を接続する。
+    * **マイコンボードに書き込む** をクリックする。
+
+
+## 🎮 操作方法
+
+| キー | 機能 | 説明 |
 | :--- | :--- | :--- |
-| **Enter** | Play / Pause Selected
-| **; / .** |  Scroll Playlist Up / Down | Scrolls Up / Down playlist or Menu if Help/Menu is open. |
-| **`[` / `]`** |  Volume - / + | Decrease or Increases Volume. 
-| **N / B** |  Next / Previous Song  | Go back to the previous or next song. |
-| **`/ / ,** |  Seek Forward 5s / Seek Backward 5s | 
-| **S** | Toggle Shuffle | Toggle Shuffle mode On/Off. |
-| **L** | Toggle Loop Mode (All / One / None) | Cycle: 1X (No Loop) -> ALL (Loop All) -> ONE (Loop Song). |
-| **V** | Toggle Visualizer | Toggle the audio visualizer bars On/Off. |
-| **Esc** | Open Settings Menu | Open the System Menu (Rescan SD Card). |
-| **I** | Open Help Menu | Open/Close the Help Shortcut popup. |
-### Pocket Mode (Button A / G0)
+| **Enter** | 再生 / 一時停止 | 選択中のトラックを再生・一時停止 |
+| **; / .** | プレイリスト上下スクロール | プレイリストまたはメニューを上下にスクロール |
+| **`[` / `]`** | 音量 - / + | 音量を下げる / 上げる |
+| **N / B** | 次の曲 / 前の曲 | 次または前のトラックへ移動 |
+| **`/` / `,`** | 5秒早送り / 5秒巻き戻し | トラックを ±5 秒シーク |
+| **S** | シャッフル切り替え | シャッフルモードのオン / オフ |
+| **L** | ループモード切り替え | 1X（なし）→ ALL（全曲）→ ONE（1曲）を循環 |
+| **V** | ビジュアライザー切り替え | オーディオビジュアライザーのオン / オフ |
+| **Esc** | 設定メニューを開く | システムメニュー（SD 再スキャンなど）を開く |
+| **I** | ヘルプメニューを開く | キーボードショートカット一覧ポップアップを開閉 |
 
-* **1 Click**: Play / Pause
-* **2 Clicks**: Next Song
-* **3 Clicks**: Previous Song
+### ポケットモード（Button A / G0）
 
-*Note: Press any keyboard key to wake the screen if it has timed out.*
+* **1 クリック**: 再生 / 一時停止
+* **2 クリック**: 次の曲
+* **3 クリック**: 前の曲
 
-## 🌐 Web Server & Wi-Fi Setup
+*画面がタイムアウトした場合は、任意のキーを押して復帰してください。*
 
-Press `M` to enter the Settings menu to configure Wi-Fi:
 
-1. **Wi-Fi Mode:** Toggle between `STA (Client)` to connect to your home router, or `AP (Host)` to broadcast a network directly from the Cardputer.
-2. **Setup Network:** Follow the on-screen prompts to scan for networks and enter passwords.
-3. **Toggle Wi-Fi Power:** Turn Wi-Fi `ON`. The device will restart and apply the settings.
-4. The IP address will be displayed on the screen header. Navigate to that IP on a device connected to the same network to access the Web UI.
+## 🌐 Web サーバー・Wi-Fi 設定
 
-*(Note: Enabling Wi-Fi automatically forces the CPU to 240MHz for network stability, temporarily disabling Power Saver modes).*
+`M` キーで設定メニューを開き、Wi-Fi を設定します。
 
-## 📂 File Structure
+1. **Wi-Fi モード:** `STA（クライアント）` でホームルーターに接続するか、`AP（ホスト）` で Cardputer から直接ネットワークをブロードキャストするかを切り替え。
+2. **ネットワーク設定:** 画面の指示に従ってネットワークをスキャンし、パスワードを入力。
+3. **Wi-Fi 電源トグル:** Wi-Fi を `ON` にすると再起動して設定が適用されます。
+4. 画面ヘッダーに IP アドレスが表示されます。同じネットワークに接続した端末からその IP にアクセスすると Web UI が表示されます。
 
-The application automatically creates a cache file on your SD card after the first scan.
+*（注意: Wi-Fi 有効時はネットワーク安定性のため CPU が自動的に 240MHz に固定され、省電力モードは一時的に無効になります）*
+
+
+## 📂 ファイル構成
+
+アプリは初回スキャン後に SD カード上にキャッシュファイルを自動生成します。  
+日本語フォントを使用する場合は `/fonts/` フォルダを手動で作成してください。
 
 ```text
-/ (Root)
+/ (ルート)
 ├── Music_Folder/
-│   ├── Song1.mp3
-│   └── Song2.mp3
+│   ├── 曲1.mp3
+│   └── 曲2.mp3
 ├── Other_Song.mp3
-└── playlist.txt  <-- Created automatically by the app
+├── fonts/                  <-- TTF フォントを置くフォルダ（任意）
+│   └── NotoSansJP.ttf      <-- 例: 任意の TTF ファイル
+└── playlist.txt            <-- アプリが自動生成するキャッシュ
 ```
-## ❓ Troubleshooting
 
-* **"No MP3 Files Found":**
-    * Ensure the SD card is FAT32.
-    * Ensure files end in `.mp3` (or `.MP3`).
-    * Try pressing `M` then `1` to force a rescan.
-* **Audio Stuttering:**
-    * This can happen with very high bitrate files (320kbps+) or slow SD cards. The code is optimized for 128kbps - 192kbps MP3s.
-* **Compilation Errors:**
-    * Ensure you have installed `ESP8266Audio` version 1.9.7 or later.
-    * Refer to https://github.com/sanchitminda/MP3PlayerForM5Cardputer/issues/5 
 
-## 📜 License
+## ❓ トラブルシューティング
 
-This project is open-source. Feel free to modify and improve it!
+* **「MP3 ファイルが見つかりません」:**
+    * SD カードが FAT32 でフォーマットされているか確認する。
+    * ファイルの拡張子が `.mp3`（または `.MP3`）であることを確認する。
+    * `M` → `1` を押して強制再スキャンを試す。
+* **音声のブツ切れ:**
+    * 非常に高ビットレート（320kbps 以上）のファイルや低速な SD カードで発生することがあります。128kbps〜192kbps での動作が最適化されています。
+* **日本語が表示されない:**
+    * SD カードの `/fonts/` フォルダに `.ttf` ファイルが存在するか確認する。
+    * TTF ファイルが見つからない場合は内蔵ビットマップフォントにフォールバックします（英数字・一部 CJK のみ対応）。
+* **コンパイルエラー:**
+    * `ESP8266Audio` バージョン 1.9.7 以降がインストールされているか確認する。
+    * `OpenFontRender` ライブラリがインストールされているか確認する。
+    * パーティションスキームが `Huge APP` に設定されているか確認する。
+    * 参考: https://github.com/sanchitminda/MP3PlayerForM5Cardputer/issues/5
 
-**Credits:**
-* Audio processing powered by the [ESP8266Audio Library](https://github.com/earlephilhower/ESP8266Audio).
-* UI and Hardware integration via M5Stack libraries.
-## 🐛 Known Issues / Notes
 
-* **Audio Stuttering:** If you experience audio stuttering while on `ULTRA (80MHz)` Power Saver mode, your MP3 bitrates may be too high for the underclocked CPU. Switch to `BASIC (160MHz)`.
-* **SD Card Limit:** The ESP32 requires file paths to start with a `/`. Ensure your SD card is clean and not corrupted.
+## 📜 ライセンス
 
-## 👨‍💻 Author
+このプロジェクトはオープンソースです。自由に改変・改善してください！
 
-Created by [Sanchit Minda](https://www.google.com/search?q=https://github.com/sanchitminda)
+**クレジット:**
+* 音声処理: [ESP8266Audio ライブラリ](https://github.com/earlephilhower/ESP8266Audio)
+* TTF フォントレンダリング: [OpenFontRender](https://github.com/takkaO/OpenFontRender) by takkaO
+* UI・ハードウェア統合: M5Stack ライブラリ群
 
-If you like this project, feel free to star the repo and share your suggestions!
+
+## 🐛 既知の問題・注意事項
+
+* **音声のブツ切れ:** `ULTRA (80MHz)` 省電力モードで音声がブツ切れる場合、MP3 のビットレートがアンダークロックされた CPU には高すぎる可能性があります。`BASIC (160MHz)` に切り替えてください。
+* **SD カードの制限:** ESP32 はファイルパスが `/` で始まることを要求します。SD カードが正常でクリーンな状態であることを確認してください。
+* **ビジュアライザー（visMode 3）:** FFT アニメーション（33fps）は処理負荷が高いため、TTF フォントレンダリングは使用されません（内蔵ビットマップフォントを使用）。
+
+
+## 👨‍💻 作者・謝辞
+
+オリジナル作成: [Sanchit Minda](https://github.com/sanchitminda)
+
+日本語対応フォーク: [handomade](https://github.com/handomade/MP3PlayerForM5CardputerJ)
+
+このプロジェクトが役に立った場合は、リポジトリへのスターや改善提案をお待ちしています！
 
