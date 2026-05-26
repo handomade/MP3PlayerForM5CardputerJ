@@ -165,6 +165,10 @@ LGFX_Sprite visSprite(&M5Cardputer.Display);
 UIState currentState = UI_PLAYER;
 unsigned long lastInputTime = 0;
 bool isScreenOff = false;
+int g_titleScrollOffset = 0;
+String g_lastScrollTitle = "";
+unsigned long g_lastScrollStep = 0;
+bool g_titleNeedsScroll = false;
 
 // Text Input Globals
 int textInputTarget = 0; // 0=STA Pass, 1=AP SSID, 2=AP Pass
@@ -853,12 +857,43 @@ public:
                 }
             }
             if (dispTitle.length() > 0) {
+                if (dispTitle != g_lastScrollTitle) {
+                    g_titleScrollOffset = 0;
+                    g_lastScrollTitle = dispTitle;
+                    g_lastScrollStep = millis();
+                }
+                bool titleFits = (fitJPString(dispTitle, 105) == dispTitle);
+                g_titleNeedsScroll = !titleFits;
+                String titleToShow;
+                if (titleFits) {
+                    titleToShow = dispTitle;
+                } else {
+                    // スクロール位置を350msごとに1文字進める
+                    unsigned long now = millis();
+                    if (now - g_lastScrollStep > 350) {
+                        g_lastScrollStep = now;
+                        const char* p = dispTitle.c_str() + g_titleScrollOffset;
+                        if (*p) {
+                            unsigned char uc = (unsigned char)*p;
+                            int step = (uc < 0x80) ? 1 : (uc < 0xE0) ? 2 : (uc < 0xF0) ? 3 : 4;
+                            g_titleScrollOffset += step;
+                            // 残りが表示領域に収まる位置まで来たらリセット
+                            if (fitJPString(dispTitle.substring(g_titleScrollOffset), 105) == dispTitle.substring(g_titleScrollOffset))
+                                g_titleScrollOffset = 0;
+                        } else {
+                            g_titleScrollOffset = 0;
+                        }
+                    }
+                    String fromOffset = dispTitle.substring(g_titleScrollOffset);
+                    titleToShow = fitJPString(fromOffset, 105);
+                    if (titleToShow.endsWith("~")) titleToShow.remove(titleToShow.length() - 1);
+                }
                 if (g_jpFontLoaded) {
                     g_ofr.setDrawer(M5Cardputer.Display); g_ofr.setFontSize(12);
                     g_ofr.setFontColor(C_TEXT_MAIN, C_BG_DARK);
-                    g_ofr.drawString(fitJPString(dispTitle, 105).c_str(), xStart + 5, yStart + 16);
+                    g_ofr.drawString(titleToShow.c_str(), xStart + 5, yStart + 16);
                 } else {
-                    M5Cardputer.Display.print(fitJPString(dispTitle, 105));
+                    M5Cardputer.Display.print(titleToShow);
                 }
             }
         }
@@ -926,11 +961,31 @@ public:
                         break;
                     }
                 }
-                String artist = audioApp.currentArtist.length() > 0 ? audioApp.currentArtist : "Unknown Artist";
-                String album = audioApp.currentAlbum.length() > 0 ? audioApp.currentAlbum : "Unknown Album";
-                visSprite.setFont(&fonts::lgfxJapanGothic_12);
-                visSprite.setTextColor(C_TEXT_MAIN); visSprite.setCursor(45, 4); visSprite.print(fitJPString(artist, 70));
-                visSprite.setTextColor(C_TEXT_DIM); visSprite.setCursor(45, 16); visSprite.print(fitJPString(album, 70));
+                {
+                    auto isUtf8Ok = [](const String& s) -> bool {
+                        for (const char* p = s.c_str(); *p; ) {
+                            unsigned char c = (unsigned char)*p++;
+                            if (c < 0x80) continue;
+                            int ex = (c >= 0xF0) ? 3 : (c >= 0xE0) ? 2 : (c >= 0xC0) ? 1 : -1;
+                            if (ex < 0) return false;
+                            for (int i = 0; i < ex; i++) { if (((unsigned char)*p++ & 0xC0) != 0x80) return false; }
+                        }
+                        return true;
+                    };
+                    String artist = (audioApp.currentArtist.length() > 0 && isUtf8Ok(audioApp.currentArtist)) ? audioApp.currentArtist : "Unknown Artist";
+                    String album  = (audioApp.currentAlbum.length()  > 0 && isUtf8Ok(audioApp.currentAlbum))  ? audioApp.currentAlbum  : "Unknown Album";
+                    if (g_jpFontLoaded) {
+                        g_ofr.setDrawer(visSprite); g_ofr.setFontSize(12);
+                        g_ofr.setFontColor(C_TEXT_MAIN, C_BG_DARK);
+                        g_ofr.drawString(fitJPString(artist, 70).c_str(), 45, 4);
+                        g_ofr.setFontColor(C_TEXT_DIM, C_BG_DARK);
+                        g_ofr.drawString(fitJPString(album, 70).c_str(), 45, 16);
+                    } else {
+                        visSprite.setFont(&fonts::lgfxJapanGothic_12);
+                        visSprite.setTextColor(C_TEXT_MAIN); visSprite.setCursor(45, 4); visSprite.print(fitJPString(artist, 70));
+                        visSprite.setTextColor(C_TEXT_DIM); visSprite.setCursor(45, 16); visSprite.print(fitJPString(album, 70));
+                    }
+                }
                 int elapsedSec = 0, totalSec = 0;
                 if (audioApp.id3 && audioApp.id3->getSize() > 0) {
                     elapsedSec = audioApp.id3->getPos() / 16000;
@@ -2167,6 +2222,7 @@ void loop() {
         static unsigned long lastVis = 0; if (millis() - lastVis > 30) { UIManager::drawVisualizer(); lastVis = millis(); }
         static unsigned long lastBat = 0; if (millis() - lastBat > 10000) { UIManager::drawBattery(); lastBat = millis(); }
         static unsigned long lastProg = 0; if (millis() - lastProg > 1000) { UIManager::drawNowPlaying(); lastProg = millis(); }
+        static unsigned long lastTitleScroll = 0; if (g_titleNeedsScroll && millis() - lastTitleScroll > 350) { UIManager::drawNowPlaying(); lastTitleScroll = millis(); }
     }
 
     if (userSettings.timeoutIndex > 0 && !isScreenOff) {
